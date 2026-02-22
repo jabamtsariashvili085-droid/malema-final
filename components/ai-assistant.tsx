@@ -69,7 +69,7 @@ export function AIAssistant() {
 
         // 2. Product Search
         if (text.includes("გვაქვს") || text.includes("არის") || text.includes("მაქვს")) {
-            const searchTerms = text.replace(/(გვაქვს|არის|მაქვს|თუ|?) /g, "").trim();
+            const searchTerms = text.replace(/(გვაქვს|არის|მაქვს|თუ|\?) /g, "").trim();
             const found = store.products.filter(p =>
                 p.name.toLowerCase().includes(searchTerms) ||
                 (p.category && p.category.toLowerCase().includes(searchTerms))
@@ -107,8 +107,8 @@ export function AIAssistant() {
             );
         }
 
-        // 4. Sales/Profit Analytics
-        if (text.includes("მოგება") || text.includes("შემოსავალი") || text.includes("ტოპ")) {
+        // 4. Sales/Profit/Purchase Analytics
+        if (text.includes("მოგება") || text.includes("შემოსავალი") || text.includes("ტოპ") || text.includes("გაყიდვა")) {
             const top = store.topProducts[0];
             return (
                 <div>
@@ -120,15 +120,45 @@ export function AIAssistant() {
             );
         }
 
+        if (text.includes("შესყიდვა") || text.includes("ვიყიდეთ") || text.includes("შემოვიდა")) {
+            const lastPurchase = store.purchaseHistory[store.purchaseHistory.length - 1];
+            return (
+                <div>
+                    🛒 <b>ბოლო შესყიდვები:</b><br /><br />
+                    {lastPurchase ? (
+                        <div>
+                            • ბოლოს შემოვიდა: <b>{lastPurchase.productName}</b><br />
+                            • რაოდენობა: <b>{lastPurchase.quantity} ერთ.</b><br />
+                            • თარიღი: <b>{new Date(lastPurchase.createdAt).toLocaleDateString("ka-GE")}</b>
+                        </div>
+                    ) : (
+                        "შესყიდვების ისტორია ცარიელია."
+                    )}
+                </div>
+            );
+        }
+
         // 5. Advice
-        if (text.includes("რჩევა") || text.includes("რა ვქნა") || text.includes("დახმარება")) {
+        if (text.includes("რჩევა") || text.includes("რა ვქნა") || text.includes("დახმარება") || text.includes("მირჩიე")) {
             if (store.lowStockProducts.length > 0) {
                 return "💡 ჩემი რჩევაა, პირველ რიგში შეავსოთ **კრიტიკული მარაგები**, რათა არ დაკარგოთ კლიენტები დეკორის არქონის გამო.";
             }
             return "💡 ყველაფერი კარგად მიდის. გირჩევთ აქცენტი გააკეთოთ **ტოპ გაყიდვადი დეკორების** პოპულარიზაციაზე.";
         }
 
-        return "უკაცრავად, ამ კითხვაზე ზუსტი პასუხი არ მაქვს. შეგიძლიათ მკითხოთ მარაგების, მოგების ან საჭირო ლისტების რაოდენობის შესახებ.";
+        return (
+            <div>
+                უკაცრავად, ამ კითხვაზე ზუსტი პასუხი არ მაქვს.
+                <br /><br />
+                <b>შეგიძლიათ მკითხოთ:</b>
+                <br />
+                • მარაგების შესახებ (მაგ: "რა მარაგი გვაქვს?")
+                <br />
+                • შესყიდვების შესახებ (მაგ: "რა ვიყიდეთ ბოლოს?")
+                <br />
+                • კალკულატორი (მაგ: "20 კვადრატულზე რამდენი ლისტი მინდა?")
+            </div>
+        );
     };
 
     const handleSend = (textOverride?: string) => {
