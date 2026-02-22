@@ -27,6 +27,7 @@ export function AIAssistant() {
     const [isOpen, setIsOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [input, setInput] = useState("");
+    const [autoScroll, setAutoScroll] = useState(true);
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "ai",
@@ -47,6 +48,7 @@ export function AIAssistant() {
     const router = useRouter();
     const pathname = usePathname();
     const scrollRef = useRef<HTMLDivElement>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     // Context helper
     const getPageName = () => {
@@ -95,15 +97,30 @@ export function AIAssistant() {
         recognition.start();
     };
 
-    const scrollToBottom = () => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (force = false) => {
+        const el = scrollAreaRef.current;
+        if (!el) return;
+        if (force || autoScroll) {
+            el.scrollTop = el.scrollHeight;
         }
+    };
+
+    const handleScroll = () => {
+        const el = scrollAreaRef.current;
+        if (!el) return;
+        // If user is within 100px of the bottom, keep auto-scroll on
+        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+        setAutoScroll(nearBottom);
     };
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, isOpen]);
+    }, [messages]);
+
+    // Force scroll to bottom when chat is opened
+    useEffect(() => {
+        if (isOpen) scrollToBottom(true);
+    }, [isOpen]);
 
     const generateAIResponse = (userText: string): React.ReactNode => {
         const text = userText.toLowerCase().trim();
@@ -344,6 +361,8 @@ export function AIAssistant() {
         const rawInput = textOverride || input;
         if (!rawInput.trim()) return;
 
+        // Always auto-scroll when user sends a message
+        setAutoScroll(true);
         const userMsg: Message = { role: "user", content: rawInput };
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
@@ -369,7 +388,11 @@ export function AIAssistant() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden p-0 flex flex-col h-0">
-                        <ScrollArea className="flex-1 p-4">
+                        <div
+                            ref={scrollAreaRef}
+                            onScroll={handleScroll}
+                            className="flex-1 overflow-y-auto p-4"
+                        >
                             <div className="flex flex-col gap-4">
                                 {messages.map((msg, i) => (
                                     <div key={i} className={cn("flex flex-col max-w-[90%] rounded-2xl p-3 text-sm",
@@ -377,9 +400,10 @@ export function AIAssistant() {
                                         {msg.content}
                                     </div>
                                 ))}
+                                {/* Scroll anchor */}
                                 <div ref={scrollRef} />
                             </div>
-                        </ScrollArea>
+                        </div>
 
                         <div className="p-3 border-t bg-muted/30">
                             <div className="flex flex-wrap gap-2">
